@@ -1,0 +1,8 @@
+@import './base.css';
+
+body {
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  user-select: none;
+}

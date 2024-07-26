@@ -1,0 +1,97 @@
+name: Make Release
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        node-version: [18.x]
+        runtime:
+          - linux-x64
+          - win-x64
+        include:
+        - runtime: linux-x64
+          os: ubuntu-22.04 #ubuntu-latest
+          script: linux
+
+        - runtime: win-x64
+          os: windows-2022 #windows-latest
+          script: win
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: "pnpm"
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Install packages
+      if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.runtime, 'linux-x64')
+      uses: awalsh128/cache-apt-pkgs-action@v1.4.2
+      with:
+        packages: libarchive-tools # https://github.com/electron-userland/electron-builder/issues/4181
+        version: 1.0
+
+    - name: Get Version Number
+      id: getPackageInfo
+      uses: jaywcjlove/github-action-package@v2.0.0
+
+    - name: Build x64 with Node.js ${{ matrix.node-version}}
+      if: contains(matrix.runtime, 'x64')
+      run: pnpm run build:${{ matrix.script }}
+
+    - name: Create a GitHub release
+      uses: ncipollo/release-action@v1
+      with:
+        tag: v${{ steps.getPackageInfo.outputs.version }}
+        name: Release ${{ steps.getPackageInfo.outputs.version }}
+        skipIfReleaseExists: true
+        draft: true
+
+    - name: Upload AppImage x64 Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.runtime, 'linux-x64')
+      with:
+        tag_name: v${{ steps.getPackageInfo.outputs.version }}
+        files: dist/${{ steps.getPackageInfo.outputs.name }}-${{ steps.getPackageInfo.outputs.version }}-linux-x86_64.AppImage
+
+    - name: Upload Linux tar.gz x64 Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.runtime, 'linux-x64')
+      with:
+        tag_name: v${{ steps.getPackageInfo.outputs.version }}
+        files: dist/${{ steps.getPackageInfo.outputs.name }}-${{ steps.getPackageInfo.outputs.version }}-linux-x64.zip
+
+    - name: Upload Linux deb x64 Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.runtime, 'linux-x64')
+      with:
+        tag_name: v${{ steps.getPackageInfo.outputs.version }}
+        files: dist/${{ steps.getPackageInfo.outputs.name }}-${{ steps.getPackageInfo.outputs.version }}-linux-amd64.deb
+
+    - name: Upload Linux pacman x64 Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.runtime, 'linux-x64')
+      with:
+        tag_name: v${{ steps.getPackageInfo.outputs.version }}
+        files: dist/${{ steps.getPackageInfo.outputs.name }}-${{ steps.getPackageInfo.outputs.version }}-linux-x64.pacman
+
+
+    - name: Upload Windows x64 .exe nsis Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(matrix.os, 'windows') && startsWith(matrix.runtime, 'win-x64')
+      with:
+        tag_name: v${{ steps.getPackageInfo.outputs.version }}
+        files: dist/${{ steps.getPackageInfo.outputs.name }}-${{ steps.getPackageInfo.outputs.version }}-win-x64.exe

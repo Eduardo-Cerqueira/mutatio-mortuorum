@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `profile_name_unique` ON `profile` (`name`);

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `profileMods_mod_id_profile_id_unique` ON `profileMods` (`mod_id`,`profile_id`);
