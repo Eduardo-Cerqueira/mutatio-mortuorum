@@ -44,9 +44,20 @@ jobs:
         packages: libarchive-tools # https://github.com/electron-userland/electron-builder/issues/4181
         version: 1.0
 
+    - name: Install rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+
+    - name: Install git-cliff
+      uses: taiki-e/cache-cargo-install-action@v2
+      with:
+          tool: git-cliff
+
     - name: Get Version Number
       id: getPackageInfo
       uses: jaywcjlove/github-action-package@v2.0.0
+
+    - name: Get body
+      run:  git cliff --latest > changes.md
 
     - name: Build x64 with Node.js ${{ matrix.node-version}}
       if: contains(matrix.runtime, 'x64')
@@ -59,6 +70,7 @@ jobs:
         name: Release ${{ steps.getPackageInfo.outputs.version }}
         skipIfReleaseExists: true
         draft: true
+        bodyFile: ./changes.md
 
     - name: Upload AppImage x64 Release
       uses: softprops/action-gh-release@v2
