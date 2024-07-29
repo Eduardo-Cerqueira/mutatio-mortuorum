@@ -8,7 +8,13 @@ import { Vpk } from './utils/node-vvpk.js'
 
 export type SteamClient = Omit<Client, 'init' | 'runCallbacks'>
 
-export const initializeClient = (): SteamClient => steamworks.init(550)
+export const initializeClient = (): SteamClient | false => {
+  try {
+    return steamworks.init(550)
+  } catch {
+    return false
+  }
+}
 
 const addonFolder = (client: SteamClient): string =>
   path.join(client.apps.appInstallDir(550), 'left4dead2')

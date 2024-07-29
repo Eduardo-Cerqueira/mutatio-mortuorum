@@ -4,6 +4,7 @@ import HomeHeader from './components/Profil/HomeHeader'
 import ProfileSelection from './components/Profil/ProfileSelection'
 import TopBar from './components/Mods/TopBar'
 import ListMods from './components/Mods/ListMods'
+import { Modal } from '@mantine/core'
 
 export type Profile = {
   id: number
@@ -23,6 +24,7 @@ interface Conflicts {
 export type WorkshopMod = workshop.WorkshopItem & Conflicts
 
 function App(): JSX.Element {
+  const [steamInitialized, setSteamInitialized] = useState<boolean>(false)
   const [workshopItems, setWorkshopItems] = useState<WorkshopMod[]>([])
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [activeProfile, setActiveProfile] = useState<number>(0)
@@ -30,6 +32,12 @@ function App(): JSX.Element {
   const [validatedMods, setValidatedMods] = useState<WorkshopMod[]>([])
 
   useEffect(() => {
+    window.electron.ipcRenderer.send('steamInitialized')
+
+    window.electron.ipcRenderer.on('steamInitialized', (_, data) => {
+      setSteamInitialized(data)
+    })
+
     window.electron.ipcRenderer.send('fetchSubscribedItems')
 
     window.electron.ipcRenderer.on('fetchSubscribedItems', (_, data) => {
@@ -58,6 +66,17 @@ function App(): JSX.Element {
 
   return (
     <>
+      {steamInitialized ? (
+        <></>
+      ) : (
+        <Modal
+          size={'xl'}
+          opened={!steamInitialized}
+          onClose={close}
+          title="Steam is not launched/installed"
+          centered
+        />
+      )}
       {activeProfile === 0 ? (
         <>
           <HomeHeader setProfiles={setProfiles} profiles={profiles} />

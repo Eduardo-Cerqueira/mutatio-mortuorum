@@ -89,114 +89,124 @@ app.whenReady().then(() => {
 
   migrate(db, { migrationsFolder: resolve(__dirname, '../../resources/drizzle') })
 
-  const client: SteamClient = initializeClient()
+  const client: SteamClient | false = initializeClient()
 
-  ipcMain.on('steamName', () => {
-    mainWindow.webContents.send('steamName', getUsername(client))
-  })
-
-  ipcMain.on('fetchSubscribedItems', async () => {
-    const fetchedSubscriberWorkshopItems = (await fetchSubscriberWorkshopItems(
-      client
-    )) as workshop.WorkshopItem[]
-    const conflicts = getModsConflicts(client)
-
-    fetchedSubscriberWorkshopItems
-      .filter((item) => !!item)
-      .map((item) => {
-        const modId = item.publishedFileId.toString()
-        if (!conflicts[modId]) {
-          conflicts.push({ id: modId, conflicts: [] })
-        }
-        const modConflictIndex = conflicts.findIndex((element) => element.id === modId)
-
-        item['conflicts'] = conflicts[modConflictIndex].conflicts
-        return item
-      })
-    mainWindow.webContents.send('fetchSubscribedItems', fetchedSubscriberWorkshopItems)
-  })
-
-  ipcMain.on('fetchProfiles', async () => {
-    const fetchedProfiles = await fetchAllProfiles()
-    if (fetchedProfiles.length < 1) {
-      const result = await addProfile('default')
-      const mods = await listActivatedMods(client)
-      const activatedMods = mods.filter((mod) => mod.activated === 1)
-
-      activatedMods.map(async (mod) => {
-        await addModToProfile(result[0].id, Number(mod.workshopId))
-      })
-
-      store.set('currentProfile', 1)
-
-      mainWindow.webContents.send('fetchProfiles', [{ id: 1, name: 'default' }])
-    } else {
-      mainWindow.webContents.send('fetchProfiles', fetchedProfiles)
-    }
-  })
-
-  ipcMain.on('fetchProfileMods', async (_, data) => {
-    const result = await fetchProfileMods(data.profile_id)
-    mainWindow.webContents.send('fetchProfileMods', await result)
-  })
-
-  ipcMain.on('addProfile', async (_, data) => {
-    const result = addProfile(data.name)
-    mainWindow.webContents.send('addProfile', await result)
-  })
-
-  ipcMain.on('renameProfile', async (_, data) => {
-    const status = renameProfile(data.id, data.name)
-    mainWindow.webContents.send('renameProfile', await status)
-  })
-
-  ipcMain.on('deleteProfile', async (_, data) => {
-    const status = deleteProfile(data.id)
-    await deleteProfileMods(data.id)
-    mainWindow.webContents.send('deleteProfile', await status)
-  })
-
-  ipcMain.on('saveProfile', async (_, data) => {
-    const fetchedSubscriberWorkshopItems = await fetchSubscriberWorkshopItems(client)
-    const subscribedItems = fetchedSubscriberWorkshopItems.filter(
-      (element) => element !== null
-    ) as workshop.WorkshopItem[]
-
-    const activatedModsId = data.mods.map((mod) => Number(mod.publishedFileId))
-    const subscribedModsId = subscribedItems.map((mod) => Number(mod.publishedFileId))
-    const desactivedModsId = subscribedModsId.filter((mod) => !activatedModsId.includes(mod))
-    const unsubcribedModsId = activatedModsId.filter((modId) => !subscribedModsId.includes(modId))
-
-    unsubcribedModsId.map((modId) => subscribeWorkshopModById(client, modId))
-
-    data.mods.map(async (mod: workshop.WorkshopItem) => {
-      await addModToProfile(data.activeProfile, Number(mod.publishedFileId))
+  if (client !== false) {
+    ipcMain.once('steamInitialized', async () => {
+      mainWindow.webContents.send('steamInitialized', true)
     })
 
-    desactivedModsId.map(async (modId: number) => {
-      await removeModFromProfile(data.activeProfile, modId)
+    ipcMain.on('steamName', () => {
+      mainWindow.webContents.send('steamName', getUsername(client))
     })
 
-    const profileId = store.get('currentProfile')
-    if (profileId === data.activeProfile) {
-      await generateAddonsFile(data.activeProfile, client)
-    }
+    ipcMain.on('fetchSubscribedItems', async () => {
+      const fetchedSubscriberWorkshopItems = (await fetchSubscriberWorkshopItems(
+        client
+      )) as workshop.WorkshopItem[]
+      const conflicts = getModsConflicts(client)
 
-    mainWindow.webContents.send('saveProfile')
-  })
+      fetchedSubscriberWorkshopItems
+        .filter((item) => !!item)
+        .map((item) => {
+          const modId = item.publishedFileId.toString()
+          if (!conflicts[modId]) {
+            conflicts.push({ id: modId, conflicts: [] })
+          }
+          const modConflictIndex = conflicts.findIndex((element) => element.id === modId)
 
-  ipcMain.on('currentProfile', async () => {
-    const profileId = store.get('currentProfile')
+          item['conflicts'] = conflicts[modConflictIndex].conflicts
+          return item
+        })
+      mainWindow.webContents.send('fetchSubscribedItems', fetchedSubscriberWorkshopItems)
+    })
 
-    mainWindow.webContents.send('currentProfile', profileId)
-  })
+    ipcMain.on('fetchProfiles', async () => {
+      const fetchedProfiles = await fetchAllProfiles()
+      if (fetchedProfiles.length < 1) {
+        const result = await addProfile('default')
+        const mods = await listActivatedMods(client)
+        const activatedMods = mods.filter((mod) => mod.activated === 1)
 
-  ipcMain.on('activateProfile', async (_, data) => {
-    await generateAddonsFile(data.profileId, client)
-    store.set('currentProfile', data.profileId)
+        activatedMods.map(async (mod) => {
+          await addModToProfile(result[0].id, Number(mod.workshopId))
+        })
 
-    mainWindow.webContents.send('activateProfile')
-  })
+        store.set('currentProfile', 1)
+
+        mainWindow.webContents.send('fetchProfiles', [{ id: 1, name: 'default' }])
+      } else {
+        mainWindow.webContents.send('fetchProfiles', fetchedProfiles)
+      }
+    })
+
+    ipcMain.on('fetchProfileMods', async (_, data) => {
+      const result = await fetchProfileMods(data.profile_id)
+      mainWindow.webContents.send('fetchProfileMods', await result)
+    })
+
+    ipcMain.on('addProfile', async (_, data) => {
+      const result = addProfile(data.name)
+      mainWindow.webContents.send('addProfile', await result)
+    })
+
+    ipcMain.on('renameProfile', async (_, data) => {
+      const status = renameProfile(data.id, data.name)
+      mainWindow.webContents.send('renameProfile', await status)
+    })
+
+    ipcMain.on('deleteProfile', async (_, data) => {
+      const status = deleteProfile(data.id)
+      await deleteProfileMods(data.id)
+      mainWindow.webContents.send('deleteProfile', await status)
+    })
+
+    ipcMain.on('saveProfile', async (_, data) => {
+      const fetchedSubscriberWorkshopItems = await fetchSubscriberWorkshopItems(client)
+      const subscribedItems = fetchedSubscriberWorkshopItems.filter(
+        (element) => element !== null
+      ) as workshop.WorkshopItem[]
+
+      const activatedModsId = data.mods.map((mod) => Number(mod.publishedFileId))
+      const subscribedModsId = subscribedItems.map((mod) => Number(mod.publishedFileId))
+      const desactivedModsId = subscribedModsId.filter((mod) => !activatedModsId.includes(mod))
+      const unsubcribedModsId = activatedModsId.filter((modId) => !subscribedModsId.includes(modId))
+
+      unsubcribedModsId.map((modId) => subscribeWorkshopModById(client, modId))
+
+      data.mods.map(async (mod: workshop.WorkshopItem) => {
+        await addModToProfile(data.activeProfile, Number(mod.publishedFileId))
+      })
+
+      desactivedModsId.map(async (modId: number) => {
+        await removeModFromProfile(data.activeProfile, modId)
+      })
+
+      const profileId = store.get('currentProfile')
+      if (profileId === data.activeProfile) {
+        await generateAddonsFile(data.activeProfile, client)
+      }
+
+      mainWindow.webContents.send('saveProfile')
+    })
+
+    ipcMain.on('currentProfile', async () => {
+      const profileId = store.get('currentProfile')
+
+      mainWindow.webContents.send('currentProfile', profileId)
+    })
+
+    ipcMain.on('activateProfile', async (_, data) => {
+      await generateAddonsFile(data.profileId, client)
+      store.set('currentProfile', data.profileId)
+
+      mainWindow.webContents.send('activateProfile')
+    })
+  } else {
+    ipcMain.once('steamInitialized', async () => {
+      mainWindow.webContents.send('steamInitialized', false)
+    })
+  }
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
