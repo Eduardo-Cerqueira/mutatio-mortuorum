@@ -24,9 +24,9 @@ import {
 } from './persistance/ProfileModsRepository.js'
 import { workshop } from 'steamworks.js/client.js'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
-import { db } from './utils/database.js'
+import { db } from './persistance/database.js'
 import { generateAddonsFile } from './mods.js'
-import { store } from './utils/store.js'
+import { store } from './common/store.js'
 
 function createWindow(): BrowserWindow {
   const windowWidth = store.get('windowWidth')

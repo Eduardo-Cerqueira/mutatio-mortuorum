@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
-import { db } from '../utils/database.js'
-import { profileMods } from '../utils/schema.js'
+import { db } from '../persistance/database.js'
+import { profileMods } from './schema.js'
 
 type ProfileMods = {
   id: number

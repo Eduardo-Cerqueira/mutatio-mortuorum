@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
-import { db } from '../utils/database.js'
-import { profile } from '../utils/schema.js'
+import { db } from '../persistance/database.js'
+import { profile } from './schema.js'
 
 type Profile = {
   id: number

@@ -4,7 +4,7 @@ import { createWriteStream, readdirSync } from 'node:fs'
 import { readdir, readFile } from 'fs/promises'
 import { workshop } from 'steamworks.js/client.js'
 import { fetchProfileMods } from './persistance/ProfileModsRepository.js'
-import { Vpk } from './utils/node-vvpk.js'
+import { Vpk } from './common/utils/node-vvpk.js'
 
 export type SteamClient = Omit<Client, 'init' | 'runCallbacks'>
 
