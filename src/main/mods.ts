@@ -24,10 +24,6 @@ const addonFile = (client: SteamClient): string => path.join(addonFolder(client)
 const workshopFolder = (client: SteamClient): string =>
   path.join(addonFolder(client), 'addons', 'workshop')
 
-export const getUsername = (client: SteamClient): string => {
-  return client.localplayer.getName()
-}
-
 const installedMods = async (modsFolder): Promise<string[]> => {
   const directoryFiles = await readdir(modsFolder, { withFileTypes: true })
   return directoryFiles

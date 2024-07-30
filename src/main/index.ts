@@ -6,7 +6,6 @@ import {
   SteamClient,
   fetchSubscriberWorkshopItems,
   getModsConflicts,
-  getUsername,
   initializeClient,
   listActivatedMods,
   subscribeWorkshopModById
