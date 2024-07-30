@@ -96,10 +96,6 @@ app.whenReady().then(() => {
       mainWindow.webContents.send('steamInitialized', true)
     })
 
-    ipcMain.on('steamName', () => {
-      mainWindow.webContents.send('steamName', getUsername(client))
-    })
-
     ipcMain.on('fetchSubscribedItems', async () => {
       const fetchedSubscriberWorkshopItems = (await fetchSubscriberWorkshopItems(
         client
